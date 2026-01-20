@@ -241,38 +241,36 @@ class ExportService:
         story.append(Spacer(1, 0.3 * inch))
         
         # Extracted Texts Section
-        story.append(Paragraph(f"Extracted Text ({len(extracted_texts)} entries)", heading_style))
+        story.append(Paragraph("Extracted Text", heading_style))
         
         if extracted_texts:
-            # Create table data
-            text_data = [["#", "Frame", "Confidence", "Extracted Text"]]
-            for idx, text in enumerate(extracted_texts, 1):
-                # Truncate long text for table
-                display_text = text.text_content[:100] + "..." if len(text.text_content) > 100 else text.text_content
-                text_data.append([
-                    str(idx),
-                    str(text.frame_number),
-                    f"{text.confidence:.1%}",
-                    display_text
-                ])
+            # Deduplicate text and create paragraph
+            unique_texts = []
+            seen_texts = set()
             
-            text_table = Table(text_data, colWidths=[0.5*inch, 0.8*inch, 1*inch, 4*inch])
-            text_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (2, -1), 'CENTER'),
-                ('ALIGN', (3, 0), (3, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('FONTSIZE', (0, 1), (-1, -1), 8),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-            ]))
-            story.append(text_table)
+            for text in extracted_texts:
+                # Normalize text for comparison (strip whitespace, lowercase)
+                normalized = text.text_content.strip().lower()
+                if normalized and normalized not in seen_texts:
+                    seen_texts.add(normalized)
+                    unique_texts.append(text.text_content.strip())
+            
+            if unique_texts:
+                # Join all unique texts into a paragraph
+                paragraph_text = " ".join(unique_texts)
+                
+                # Add paragraph with proper formatting
+                text_paragraph = Paragraph(paragraph_text, styles['Normal'])
+                story.append(text_paragraph)
+                story.append(Spacer(1, 0.2 * inch))
+                
+                # Add note about deduplication
+                note_text = f"<i>(Combined from {len(extracted_texts)} text entries, {len(unique_texts)} unique texts)</i>"
+                story.append(Paragraph(note_text, styles['Normal']))
+            else:
+                story.append(Paragraph("No readable text extracted.", styles['Normal']))
         else:
+            story.append(Paragraph("No text extracted.", styles['Normal']))
             story.append(Paragraph("No text extracted.", styles['Normal']))
         
         story.append(Spacer(1, 0.3 * inch))
