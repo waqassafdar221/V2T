@@ -27,6 +27,18 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     
+    # Video Processing
+    video_upload_dir: str = "./uploads/videos"
+    video_frames_dir: str = "./uploads/frames"
+    max_video_size_mb: int = 500
+    frame_extraction_interval: int = 1  # seconds
+    yolo_confidence_threshold: float = 0.5
+    
+    # Celery / Redis
+    redis_url: str = "redis://localhost:6379/0"
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/0"
+    
     # AI Model Configuration
     gpt_model: str = "gpt-5.1-codex-max"
     enable_gpt_5_1_codex_max: bool = True

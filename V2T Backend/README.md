@@ -1,6 +1,6 @@
 # V2T Backend
 
-A FastAPI backend service with complete authentication system and GPT-5.1-Codex-Max enabled for all clients.
+A comprehensive FastAPI backend service with authentication, email verification, and advanced video-to-text extraction capabilities using YOLO object detection and Tesseract OCR.
 
 ## Features
 
@@ -11,22 +11,102 @@ A FastAPI backend service with complete authentication system and GPT-5.1-Codex-
   - Password hashing with bcrypt
   - Role-based user types (Student, Teacher, Others)
 
+- ✅ **Video-to-Text Extraction System**
+  - Video upload with validation (.mp4, .avi, .mov, .mkv)
+  - Automatic frame extraction using FFmpeg
+  - YOLOv8 object detection on video frames
+  - Tesseract OCR for text extraction
+  - Asynchronous processing with Celery + Redis
+  - Real-time status tracking
+  - Complete results API with detected objects and extracted text
+  - **Export to PDF and Text files** with formatted results
+
 - ✅ **FastAPI Framework**
 - ✅ **GPT-5.1-Codex-Max AI Integration**
 - ✅ **SQLite Database with SQLAlchemy ORM**
 - ✅ **Environment-based Configuration**
 - ✅ **CORS Support**
 - ✅ **Automatic API Documentation (Swagger/ReDoc)**
+- ✅ **Email Service (SMTP)**
 
-## Setup
+## Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
+
+- Python 3.12+
+- FFmpeg (for video processing)
+- Tesseract OCR (for text extraction)
+- Redis (for async task queue)
+
+### One-Command Setup
 
 ```bash
+# Clone and setup
+git clone <repository-url>
+cd "V2T Backend"
+
+# Install system dependencies (macOS)
+brew install ffmpeg tesseract redis
+
+# Create virtual environment and install Python packages
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Start all services
+./start_servers.sh
+```
+
+Access the API at:
+- **API**: http://localhost:8000
+- **Swagger Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+## Detailed Setup
+
+### 1. Install System Dependencies
+
+**macOS:**
+```bash
+brew install ffmpeg tesseract redis
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install ffmpeg tesseract-ocr redis-server
+```
+
+**Verify installations:**
+```bash
+ffmpeg -version
+tesseract --version
+redis-cli ping  # Should return PONG
+```
+
+### 2. Install Python Dependencies
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Install all packages
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+This installs:
+- FastAPI, Uvicorn (web framework)
+- SQLAlchemy, databases (database)
+- PyTorch, Ultralytics (YOLO)
+- OpenCV, Pytesseract (image processing)
+- Celery, Redis (async tasks)
+- And more...
+
+### 3. Configure Environment
 
 ```bash
 cp .env.example .env
@@ -37,17 +117,52 @@ cp .env.example .env
 - `SECRET_KEY` - Change this to a secure random string
 - `OPENAI_API_KEY` - Your OpenAI API key (if using GPT features)
 - `SMTP_*` - **Email server settings for sending OTP emails** (see [EMAIL_SETUP.md](EMAIL_SETUP.md))
+- `REDIS_URL` - Redis connection URL (default: redis://localhost:6379/0)
+- `VIDEO_UPLOAD_DIR` - Directory for uploaded videos (default: ./uploads/videos)
+- `FRAME_EXTRACTION_INTERVAL` - Seconds between frame extractions (default: 1)
 
 **For Email OTP Delivery:** Configure SMTP settings in `.env` to send real emails. If not configured, OTPs will be printed to console. See [EMAIL_SETUP.md](EMAIL_SETUP.md) for detailed setup instructions.
 
-### 3. Run the Server
+### 4. Start Services
+
+**Option A: Automated (Recommended)**
+```bash
+./start_servers.sh
+```
+
+This starts:
+1. Redis (message broker)
+2. Celery worker (async video processing)
+3. FastAPI server (API endpoints)
+
+**Option B: Manual**
+
+Terminal 1 - Redis:
+```bash
+redis-server
+# or as background service
+brew services start redis  # macOS
+sudo systemctl start redis  # Linux
+```
+
+Terminal 2 - Celery Worker:
+```bash
+cd "V2T Backend"
+source venv/bin/activate
+celery -A app.tasks.video_tasks worker --loglevel=info
+```
+
+Terminal 3 - FastAPI Server:
+```bash
+cd "V2T Backend"
+source venv/bin/activate
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 5. Stop Services
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Start the server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+./stop_servers.sh
 ```
 
 The server will start at `http://localhost:8000`
@@ -130,6 +245,236 @@ Login with username or email and password.
 
 #### 4. **POST /auth/resend-otp** - Resend OTP
 Request a new OTP if the previous one expired.
+
+**Query Parameter:**
+- `email` - User's email address
+
+**Example:** `POST /auth/resend-otp?email=john@example.com`
+
+**Response:**
+```json
+{
+  "message": "OTP resent successfully. Please check your email."
+}
+```
+
+---
+
+### Video Processing Endpoints
+
+> 📘 **Detailed Documentation**: See [VIDEO_PROCESSING_GUIDE.md](VIDEO_PROCESSING_GUIDE.md) for comprehensive guide including workflows, troubleshooting, and advanced usage.
+
+#### 1. **POST /video/upload** - Upload Video for Processing
+Upload a video file for automatic frame extraction, object detection, and text extraction.
+
+**Request:**
+- **Content-Type**: multipart/form-data
+- **Authorization**: Bearer token required
+- **Body**: 
+  - `file`: Video file (.mp4, .avi, .mov, .mkv)
+  - Max size: 500MB (configurable)
+
+**cURL Example:**
+```bash
+# Get token first
+TOKEN=$(curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email": "johndoe", "password": "securepassword123"}' \
+  | jq -r '.access_token')
+
+# Upload video
+curl -X POST "http://localhost:8000/video/upload" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@sample_video.mp4"
+```
+
+**Response:**
+```json
+{
+  "video_id": 1,
+  "message": "Video uploaded successfully. Processing started.",
+  "status": "pending"
+}
+```
+
+#### 2. **GET /video/status/{video_id}** - Check Processing Status
+Get current processing status and progress of a video.
+
+**Authorization**: Bearer token required
+
+**Response:**
+```json
+{
+  "video_id": 1,
+  "status": "processing",
+  "progress": 65,
+  "created_at": "2026-01-20T10:30:00"
+}
+```
+
+**Status Values:**
+- `pending`: Queued for processing
+- `processing`: Currently extracting frames and analyzing
+- `completed`: All processing finished
+- `failed`: Error occurred during processing
+
+#### 3. **GET /video/results/{video_id}** - Get Processing Results
+Retrieve complete results including detected objects and extracted text.
+
+**Authorization**: Bearer token required
+
+**Response:**
+```json
+{
+  "video_id": 1,
+  "status": "completed",
+  "file_path": "uploads/videos/video_1_20260120_103000.mp4",
+  "detected_objects": [
+    {
+      "id": 1,
+      "label": "person",
+      "confidence": 0.95,
+      "bbox_x": 120,
+      "bbox_y": 200,
+      "bbox_width": 100,
+      "bbox_height": 300,
+      "frame_number": 10
+    },
+    {
+      "id": 2,
+      "label": "car",
+      "confidence": 0.87,
+      "bbox_x": 450,
+      "bbox_y": 150,
+      "bbox_width": 200,
+      "bbox_height": 150,
+      "frame_number": 25
+    }
+  ],
+  "extracted_texts": [
+    {
+      "id": 1,
+      "text": "Welcome to the presentation",
+      "confidence": 0.92,
+      "frame_number": 5
+    },
+    {
+      "id": 2,
+      "text": "Contact: support@example.com",
+      "confidence": 0.88,
+      "frame_number": 120
+    }
+  ],
+  "created_at": "2026-01-20T10:30:00",
+  "updated_at": "2026-01-20T10:32:15"
+}
+```
+
+#### 4. **GET /video/list** - List All User Videos
+Get list of all videos uploaded by the authenticated user.
+
+**Authorization**: Bearer token required
+
+**Response:**
+```json
+{
+  "videos": [
+    {
+      "video_id": 1,
+      "filename": "presentation.mp4",
+      "status": "completed",
+      "created_at": "2026-01-20T10:30:00"
+    },
+    {
+      "video_id": 2,
+      "filename": "lecture.mp4",
+      "status": "processing",
+      "created_at": "2026-01-20T11:15:00"
+    }
+  ],
+  "total": 2
+}
+```
+
+#### 5. **DELETE /video/delete/{video_id}** - Delete Video
+Delete a video and all associated data (frames, detections, texts).
+
+**Authorization**: Bearer token required
+
+**Response:**
+```json
+{
+  "message": "Video deleted successfully"
+}
+```
+
+#### 6. **GET /video/export/{video_id}/text** - Export Results as Text File
+Download video processing results as a formatted text file.
+
+**Authorization**: Bearer token required
+
+**Response:** Downloads `.txt` file containing:
+- Video information
+- Detected objects with details
+- Extracted text entries
+- Summary statistics
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/video/export/{video_id}/text" \
+  -H "Authorization: Bearer $TOKEN" \
+  -o "results.txt"
+```
+
+#### 7. **GET /video/export/{video_id}/pdf** - Export Results as PDF
+Download video processing results as a professionally formatted PDF.
+
+**Authorization**: Bearer token required
+
+**Response:** Downloads `.pdf` file with:
+- Professional formatting and tables
+- Video metadata
+- Detected objects table
+- Extracted text table
+- Summary with visualizations
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/video/export/{video_id}/pdf" \
+  -H "Authorization: Bearer $TOKEN" \
+  -o "results.pdf"
+```
+
+> 📘 **Detailed Export Guide**: See [VIDEO_EXPORT_GUIDE.md](VIDEO_EXPORT_GUIDE.md) for complete export documentation
+
+---
+
+## Video Processing Workflow
+
+```
+1. User uploads video → API validates and saves file
+                     ↓
+2. Celery task queued → Status: "pending"
+                     ↓
+3. FFmpeg extracts frames → Status: "processing" (20%)
+                     ↓
+4. YOLO detects objects → Status: "processing" (60%)
+                     ↓
+5. Tesseract extracts text → Status: "processing" (90%)
+                     ↓
+6. Results saved to DB → Status: "completed" (100%)
+                     ↓
+7. User retrieves results via API
+```
+
+**Processing Time Estimate:**
+- 60-second video with 1 frame/sec = 60 frames
+- Frame extraction: ~5 seconds
+- YOLO processing: ~3-6 seconds
+- OCR processing: ~12-30 seconds
+- **Total**: ~20-40 seconds
+
+---
 
 **Query Parameter:**
 - `email` - User's email address

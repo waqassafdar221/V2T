@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.core.database import database, create_tables
 from app.api import routes
 from app.api import auth
+from app.api import video
+import os
 
 
 def create_application() -> FastAPI:
@@ -24,9 +26,14 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Create upload directories
+    os.makedirs(settings.video_upload_dir, exist_ok=True)
+    os.makedirs(settings.video_frames_dir, exist_ok=True)
+    
     # Include routers
     app.include_router(auth.router)
     app.include_router(routes.router)
+    app.include_router(video.router, prefix="/video", tags=["Video Processing"])
     
     return app
 
