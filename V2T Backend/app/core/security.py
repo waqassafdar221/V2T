@@ -2,7 +2,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 from app.core.config import settings
+
+security = HTTPBearer()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -43,26 +48,34 @@ def verify_token(token: str) -> Optional[str]:
         return None
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token."""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Extract and validate the current user from JWT token.
     
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-    return encoded_jwt
-
-
-def verify_token(token: str) -> Optional[str]:
-    """Verify a JWT token and return the username."""
+    Raises HTTPException if:
+    - Token is missing or invalid
+    - Token has expired (automatically handled by JWT library)
+    - User cannot be identified from token
+    """
+    token = credentials.credentials
+    
     try:
+        # Decode and verify token (also checks expiration automatically)
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         username: str = payload.get("sub")
+        
         if username is None:
-            return None
-        return username
-    except JWTError:
-        return None
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        return {"username": username}
+        
+    except JWTError as e:
+        # This will catch expired tokens and invalid tokens
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired or is invalid. Please sign in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

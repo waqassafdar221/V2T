@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Security / Authentication
     secret_key: str = "your-secret-key-change-this-in-production-use-openssl-rand-hex-32"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24  # 24 hours
+    access_token_expire_minutes: int = 10  # 10 minutes
     otp_expire_minutes: int = 10
     
     # Email Configuration (Optional - for production)

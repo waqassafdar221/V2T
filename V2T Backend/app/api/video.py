@@ -3,10 +3,11 @@ import shutil
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.security import get_current_user
 from app.models.video import (
     Video, DetectedObject, ExtractedText, VideoStatus,
     VideoUploadResponse, VideoProcessingResult, VideoStatusResponse,
@@ -47,7 +48,8 @@ def validate_video_file(filename: str, file_size: int):
 async def upload_video(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     Upload a video file for processing.
@@ -120,11 +122,16 @@ async def upload_video(
 
 
 @router.get("/status/{video_id}", response_model=VideoStatusResponse)
-async def get_video_status(video_id: str, db: Session = Depends(get_db)):
+async def get_video_status(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Get the processing status of a video.
     
     Returns the current status and progress information.
+    Requires authentication.
     """
     video = db.query(Video).filter(Video.video_id == video_id).first()
     
@@ -163,7 +170,11 @@ async def get_video_status(video_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/results/{video_id}", response_model=VideoProcessingResult)
-async def get_video_results(video_id: str, db: Session = Depends(get_db)):
+async def get_video_results(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Get the complete processing results for a video.
     
@@ -171,6 +182,8 @@ async def get_video_results(video_id: str, db: Session = Depends(get_db)):
     - Video metadata
     - Detected objects with bounding boxes
     - Extracted text from frames
+    
+    Requires authentication.
     """
     # Get video
     video = db.query(Video).filter(Video.video_id == video_id).first()
@@ -245,7 +258,11 @@ async def get_video_results(video_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/delete/{video_id}")
-async def delete_video(video_id: str, db: Session = Depends(get_db)):
+async def delete_video(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Delete a video and all associated data.
     
@@ -253,6 +270,8 @@ async def delete_video(video_id: str, db: Session = Depends(get_db)):
     - Video file
     - Extracted frames
     - Database records
+    
+    Requires authentication.
     """
     video = db.query(Video).filter(Video.video_id == video_id).first()
     
@@ -297,10 +316,12 @@ async def list_videos(
     skip: int = 0,
     limit: int = 100,
     status_filter: str = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     List all uploaded videos with optional filtering by status.
+    Requires authentication.
     """
     query = db.query(Video)
     
@@ -325,7 +346,11 @@ async def list_videos(
 
 
 @router.get("/export/{video_id}/text")
-async def export_video_text(video_id: str, db: Session = Depends(get_db)):
+async def export_video_text(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Export video processing results to a text file.
     
@@ -334,6 +359,8 @@ async def export_video_text(video_id: str, db: Session = Depends(get_db)):
     - Detected objects with details
     - Extracted text from frames
     - Summary statistics
+    
+    Requires authentication.
     """
     # Get video
     video = db.query(Video).filter(Video.video_id == video_id).first()
@@ -389,7 +416,11 @@ async def export_video_text(video_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/export/{video_id}/pdf")
-async def export_video_pdf(video_id: str, db: Session = Depends(get_db)):
+async def export_video_pdf(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
     Export video processing results to a PDF file.
     
@@ -398,6 +429,8 @@ async def export_video_pdf(video_id: str, db: Session = Depends(get_db)):
     - Detected objects table with bounding boxes
     - Extracted text table
     - Summary statistics with visualizations
+    
+    Requires authentication.
     """
     # Get video
     video = db.query(Video).filter(Video.video_id == video_id).first()
