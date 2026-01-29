@@ -1,0 +1,274 @@
+.container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.navbar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.userName {
+  font-size: 14px;
+}
+
+.logoutBtn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.main {
+  padding: 40px 20px;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.header h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 16px;
+  color: #666;
+}
+
+.uploadSection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+@media (max-width: 968px) {
+  .uploadSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+.uploadCard {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.uploadArea {
+  margin-bottom: 30px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.fileLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  border: 3px dashed #ddd;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #fafafa;
+}
+
+.fileLabel:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.uploadIcon {
+  width: 64px;
+  height: 64px;
+  color: #667eea;
+  margin-bottom: 16px;
+}
+
+.uploadText {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.uploadHint {
+  font-size: 14px;
+  color: #999;
+}
+
+.fileInfo {
+  background: #f0f4ff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #667eea;
+}
+
+.fileInfo p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.error {
+  background-color: #fee;
+  color: #c33;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border: 1px solid #fcc;
+}
+
+.success {
+  background-color: #efe;
+  color: #3c3;
+  padding: 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border: 1px solid #cfc;
+}
+
+.success p {
+  margin: 4px 0;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s;
+}
+
+.uploadBtn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.infoCard {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.infoCard h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.infoCard h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+.stepsList {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.stepsList li {
+  margin: 12px 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features li {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #666;
+}

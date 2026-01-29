@@ -52,8 +52,12 @@ export default function Header() {
 
         {/* Auth Buttons */}
         <div className={`${styles.authButtons} ${isMenuOpen ? styles.open : ''}`}>
-          <button className={styles.signIn}>Sign In</button>
-          <button className={styles.signUp}>Sign Up</button>
+          <Link href="/auth/login">
+            <button className={styles.signIn}>Sign In</button>
+          </Link>
+          <Link href="/auth/signup">
+            <button className={styles.signUp}>Sign Up</button>
+          </Link>
         </div>
       </div>
     </header>

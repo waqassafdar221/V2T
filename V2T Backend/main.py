@@ -33,7 +33,7 @@ def create_application() -> FastAPI:
     # Include routers
     app.include_router(auth.router)
     app.include_router(routes.router)
-    app.include_router(video.router, prefix="/video", tags=["Video Processing"])
+    app.include_router(video.router)
     
     return app
 

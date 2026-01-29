@@ -484,3 +484,154 @@ async def export_video_pdf(
             detail=f"Failed to export PDF file: {str(e)}"
         )
 
+
+@router.get("/export/{video_id}/json")
+async def export_video_json(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Export video processing results to a JSON file.
+    
+    Returns structured JSON with:
+    - Video metadata
+    - Array of detected objects
+    - Array of extracted texts
+    - Processing statistics
+    
+    Requires authentication.
+    """
+    # Get video
+    video = db.query(Video).filter(Video.video_id == video_id).first()
+    
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found"
+        )
+    
+    if video.status != VideoStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Video processing not completed yet. Current status: {video.status}"
+        )
+    
+    try:
+        # Get detected objects and texts
+        detected_objects = db.query(DetectedObject).filter(
+            DetectedObject.video_id == video_id
+        ).order_by(DetectedObject.frame_number).all()
+        
+        extracted_texts = db.query(ExtractedText).filter(
+            ExtractedText.video_id == video_id
+        ).order_by(ExtractedText.frame_number).all()
+        
+        # Generate JSON file
+        export_service = ExportService()
+        file_path = export_service.export_to_json(
+            video_id=video_id,
+            video_filename=video.filename,
+            detected_objects=detected_objects,
+            extracted_texts=extracted_texts,
+            status=video.status,
+            duration=video.duration,
+            fps=video.fps
+        )
+        
+        # Return file download
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type='application/json',
+            headers={
+                "Content-Disposition": f"attachment; filename={os.path.basename(file_path)}"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to export JSON for video {video_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export JSON file: {str(e)}"
+        )
+
+
+@router.get("/export/{video_id}/csv")
+async def export_video_csv(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Export video processing results to a CSV file.
+    
+    Returns CSV with separate sections for:
+    - Detected objects (frame, timestamp, class, confidence, bbox)
+    - Extracted texts (frame, timestamp, text, confidence)
+    
+    Requires authentication.
+    """
+    # Get video
+    video = db.query(Video).filter(Video.video_id == video_id).first()
+    
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found"
+        )
+    
+    if video.status != VideoStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Video processing not completed yet. Current status: {video.status}"
+        )
+    
+    try:
+        # Get detected objects and texts
+        detected_objects = db.query(DetectedObject).filter(
+            DetectedObject.video_id == video_id
+        ).order_by(DetectedObject.frame_number).all()
+        
+        extracted_texts = db.query(ExtractedText).filter(
+            ExtractedText.video_id == video_id
+        ).order_by(ExtractedText.frame_number).all()
+        
+        # Generate CSV file
+        export_service = ExportService()
+        file_path = export_service.export_to_csv(
+            video_id=video_id,
+            video_filename=video.filename,
+            detected_objects=detected_objects,
+            extracted_texts=extracted_texts
+        )
+        
+        # Return file download
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type='text/csv',
+            headers={
+                "Content-Disposition": f"attachment; filename={os.path.basename(file_path)}"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to export CSV for video {video_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export CSV file: {str(e)}"
+        )
+
+
+@router.get("/export/{video_id}/txt")
+async def export_video_txt(
+    video_id: str, 
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    Alias for export_video_text endpoint.
+    Export video processing results to a TXT file.
+    """
+    return await export_video_text(video_id, db, current_user)
